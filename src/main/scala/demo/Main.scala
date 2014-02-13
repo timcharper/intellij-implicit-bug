@@ -1,58 +1,62 @@
 package demo
 
-import org.json4s.JsonAST.{JValue,JInt,JDouble}
-
-object DirectlyCopied {
-  trait DoubleMode { self: Implicits ⇒
-    implicit def double2jvalue(x: Double): JValue = JDouble(x)
-
-  }
-  object DoubleMode extends Implicits with DoubleMode
-  trait Implicits {
-    implicit def int2jvalue(x: Int): JValue = JInt(x)
-    // ...
-  }
+sealed trait JValue
+case class JInt(amount: BigInt) extends JValue {
+  override def toString = "JInt(%s)" format amount
 }
 
-object Reimplemented {
-  object DoubleMode {
-    implicit def int2jvalue(x: Int): JValue = JInt(x)
+case class JDouble(amount: Double) extends JValue {
+  override def toString = "JDouble(%s)" format amount
+}
+
+trait Implicits {
+  implicit def int2jvalue(x: Int): JValue = JInt(x)
+  implicit def double2jvalue(x: Double): JValue
+}
+
+object Problematic {
+  trait DoubleConversion { self: Implicits =>
     implicit def double2jvalue(x: Double): JValue = JDouble(x)
   }
+
+  object Conversions extends Implicits with DoubleConversion
+  object DoubleConversion extends Implicits with DoubleConversion // Scala plugin 0.30.380 does not like this line, even though it's ultimately unused.
+}
+
+object NotProblematic {
+  trait DoubleConversion { self: Implicits =>
+    implicit def double2jvalue(x: Double): JValue = JDouble(x)
+  }
+
+  object Conversions extends Implicits with DoubleConversion
 }
 
 object Main extends App {
-  // Json4s exhibits the problem:
   {
     {
-      import org.json4s.DoubleMode.{int2jvalue,double2jvalue}
+      import Problematic.Conversions.{int2jvalue,double2jvalue}
 
       // INTELLIJ FALSE NEGATIVE!!!
-      // double2jvalue and int2jvalue appear to collide, but the compiler doesn't mind
       val value: JValue = 5
       println("JInt = %s" format value)
     }
 
-    // For some reason, if I re-implement them (with identical implementations), it works.
     {
-      import DirectlyCopied.DoubleMode.{int2jvalue,double2jvalue}
+      import NotProblematic.Conversions.{int2jvalue,double2jvalue}
       val value: JValue = 5
-      println("XInt = %s" format value)
+      println("JInt = %s" format value)
     }
 
-    // Works
     {
-      import org.json4s.JsonDSL.int2jvalue
+      import Problematic.Conversions.int2jvalue
       val value: JValue = 10
       println("JInt = %s" format value)
     }
 
     {
-      import org.json4s.JsonDSL.double2jvalue
+      import Problematic.Conversions.double2jvalue
       val value: JValue = 10
       println("JDouble = %s" format value)
     }
   }
-
-
 }
