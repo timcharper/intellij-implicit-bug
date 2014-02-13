@@ -15,7 +15,7 @@ trait Implicits {
 }
 
 object Problematic {
-  trait DoubleConversion { self: Implicits =>
+  trait DoubleConversion {
     implicit def double2jvalue(x: Double): JValue = JDouble(x)
   }
 
@@ -24,7 +24,7 @@ object Problematic {
 }
 
 object NotProblematic {
-  trait DoubleConversion { self: Implicits =>
+  trait DoubleConversion {
     implicit def double2jvalue(x: Double): JValue = JDouble(x)
   }
 
