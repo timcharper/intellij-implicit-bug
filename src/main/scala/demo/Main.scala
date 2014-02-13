@@ -39,10 +39,6 @@ object Main extends App {
         "XDouble(%s)" format amount
     }
 
-    def output(value: XValue): Unit = {
-      println(value.toString)
-    }
-
     object Conversions {
       implicit def int2XValue(i: Int): XValue = XInt(i)
       implicit def double2XValue(d: Double): XValue = XDouble(d)
